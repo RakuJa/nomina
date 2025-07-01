@@ -1,4 +1,5 @@
 use capitalize::Capitalize;
+use itertools::Itertools;
 use nanorand::{Rng, WyRand};
 use std::collections::HashMap;
 
@@ -51,5 +52,79 @@ pub fn generate_name<S: std::hash::BuildHasher>(
             break;
         }
     }
-    result.capitalize()
+    result
+}
+#[must_use]
+/// Capitalize all the substrings contained in a string.
+///
+/// `sep` is the separator used to recognize substrings
+/// ```Rust
+/// let x = capitalize_each_substring("hi who are you?", " ") // Could also use None
+/// println!(x) // "Hi Who Are You?"
+/// let y = capitalize_each_substring("hi,who", ",")
+/// println!(y) // "Hi,Who"
+/// ```
+pub fn capitalize_each_substring(s: &str, sep: &str) -> String {
+    s.split(sep).map(capitalize_string).join(sep)
+}
+
+#[must_use]
+/// Capitalize the first letter of a string
+pub fn capitalize_string(s: &str) -> String {
+    s.capitalize()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case("hi who are you", " ", String::from("Hi Who Are You"))]
+    #[case("hi;who;are;you", ";", String::from("Hi;Who;Are;You"))]
+    #[case("hi who;are you", ";", String::from("Hi who;Are you"))]
+    fn capitalize_substring_correct_separator(
+        #[case] input_str: &str,
+        #[case] sep: &str,
+        #[case] expected: String,
+    ) {
+        let result = capitalize_each_substring(input_str, sep);
+        assert_eq!(expected, result);
+    }
+
+    #[rstest]
+    #[case("hi Who are you", " ", String::from("Hi Who Are You"))]
+    #[case("hi;who;Are;you", ";", String::from("Hi;Who;Are;You"))]
+    fn capitalize_substring_correct_separator_some_substring_already_capitalized(
+        #[case] input_str: &str,
+        #[case] sep: &str,
+        #[case] expected: String,
+    ) {
+        let result = capitalize_each_substring(input_str, sep);
+        assert_eq!(expected, result);
+    }
+
+    #[rstest]
+    #[case("hi who are you", ";", String::from("Hi who are you"))]
+    #[case("hi;who;are;you", " ", String::from("Hi;who;are;you"))]
+    fn capitalize_substring_wrong_separator(
+        #[case] input_str: &str,
+        #[case] sep: &str,
+        #[case] expected: String,
+    ) {
+        let result = capitalize_each_substring(input_str, sep);
+        assert_eq!(expected, result);
+    }
+
+    #[rstest]
+    #[case("hi Who are you", ";", String::from("Hi who are you"))]
+    #[case("hi;who;Are;you", " ", String::from("Hi;who;are;you"))]
+    fn capitalize_substring_wrong_separator_some_substring_already_capitalized(
+        #[case] input_str: &str,
+        #[case] sep: &str,
+        #[case] expected: String,
+    ) {
+        let result = capitalize_each_substring(input_str, sep);
+        assert_eq!(expected, result);
+    }
 }
