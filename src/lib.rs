@@ -35,11 +35,11 @@ pub fn generate_name<S: std::hash::BuildHasher>(
 
     for _ in 0..max_len {
         if let Some(next_chars) = chain.get(&current) {
-            if let Some(next_char) = if next_chars.is_empty() {
-                None
-            } else {
-                Some(next_chars[WyRand::new().generate_range(..next_chars.len())])
-            } {
+            if let Some(next_char) = next_chars
+                // if next_chars is empty it will generate 0 => get = None
+                .get(WyRand::new().generate_range(..next_chars.len()))
+                .copied()
+            {
                 if next_char == '^' || next_char == '\0' {
                     break;
                 }
@@ -49,10 +49,12 @@ pub fn generate_name<S: std::hash::BuildHasher>(
                 break;
             }
         } else {
+            // Word generation graceful end => word completely generated
+            result.push('^');
             break;
         }
     }
-    result
+    ensure_complete_name(result)
 }
 #[must_use]
 /// Capitalize all the substrings contained in a string.
@@ -72,6 +74,19 @@ pub fn capitalize_each_substring(s: &str, sep: &str) -> String {
 /// Capitalize the first letter of a string
 pub fn capitalize_string(s: &str) -> String {
     s.capitalize()
+}
+
+fn ensure_complete_name(n: String) -> String {
+    if n.ends_with('^') {
+        n.chars().take(n.len() - 1).collect::<String>()
+    } else if let Some(index) = n.rfind(' ') {
+        n.split_at_checked(index)
+            .map(|(w, _incomplete_word)| w)
+            .map(String::from)
+            .unwrap_or(n)
+    } else {
+        n
+    }
 }
 
 #[cfg(test)]
@@ -126,5 +141,87 @@ mod tests {
     ) {
         let result = capitalize_each_substring(input_str, sep);
         assert_eq!(expected, result);
+    }
+
+    #[rstest]
+    #[case(String::from("Gianni^"), String::from("Gianni"))]
+    #[case(
+        String::from("KaeryelAlenarYsildea^"),
+        String::from("KaeryelAlenarYsildea")
+    )]
+    #[case(
+        String::from("Kaeryel Alenar Ysildea^"),
+        String::from("Kaeryel Alenar Ysildea")
+    )]
+    #[case(String::from("^"), String::from(""))]
+    fn test_ensure_complete_name_with_correct_delimiter(
+        #[case] input_name: String,
+        #[case] expected: String,
+    ) {
+        let result = ensure_complete_name(input_name);
+        assert_eq!(result, expected);
+    }
+
+    #[rstest]
+    #[case(String::from("Gianni"), String::from("Gianni"))]
+    #[case(
+        String::from("KaeryelAlenarYsildea"),
+        String::from("KaeryelAlenarYsildea")
+    )]
+    #[case(String::from(""), String::from(""))]
+    #[case(String::from("^Marco"), String::from("^Marco"))]
+    fn test_ensure_complete_name_without_correct_delimiter_and_only_one_word(
+        #[case] input_name: String,
+        #[case] expected: String,
+    ) {
+        let result = ensure_complete_name(input_name);
+        assert_eq!(result, expected);
+    }
+
+    #[rstest]
+    #[case(
+        String::from("Gladewalker Dream Of"),
+        String::from("Gladewalker Dream")
+    )]
+    #[case(String::from("Barkskin Listener"), String::from("Barkskin"))]
+    #[case(
+        String::from("Nestle In Wintern Ro"),
+        String::from("Nestle In Wintern")
+    )]
+    #[case(
+        String::from("Raindrop On Falling "),
+        String::from("Raindrop On Falling")
+    )]
+    #[case(String::from("Wind-carried Wish"), String::from("Wind-carried"))]
+    #[case(
+        String::from("Watcher Of Falling S"),
+        String::from("Watcher Of Falling")
+    )]
+    #[case(
+        String::from("Golden Sap Flicker O"),
+        String::from("Golden Sap Flicker")
+    )]
+    fn test_ensure_complete_name_without_correct_delimiter_and_multiple_words(
+        #[case] input_name: String,
+        #[case] expected: String,
+    ) {
+        let result = ensure_complete_name(input_name);
+        assert_eq!(result, expected);
+    }
+
+    #[rstest]
+    fn test_name_generation() {
+        let names = vec![
+            "Scarlet in Summer",
+            "Verdant Taleweaver",
+            "Lurking Hunter",
+            "Masterful Sun Drinker",
+        ];
+        let order = 4;
+        let chain = build_chain(&names, order);
+
+        let name = generate_name(&chain, order, 30);
+        println!("{}", name);
+        assert_eq!(true, false);
     }
 }
