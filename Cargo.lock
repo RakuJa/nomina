@@ -123,7 +123,7 @@ checksum = "6e3d189da485332e96ba8a5ef646a311871abd7915bf06ac848a9117f19cf6e4"
 
 [[package]]
 name = "nomina"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "capitalize",
  "itertools",

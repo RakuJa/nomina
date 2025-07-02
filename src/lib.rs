@@ -208,20 +208,4 @@ mod tests {
         let result = ensure_complete_name(input_name);
         assert_eq!(result, expected);
     }
-
-    #[rstest]
-    fn test_name_generation() {
-        let names = vec![
-            "Scarlet in Summer",
-            "Verdant Taleweaver",
-            "Lurking Hunter",
-            "Masterful Sun Drinker",
-        ];
-        let order = 4;
-        let chain = build_chain(&names, order);
-
-        let name = generate_name(&chain, order, 30);
-        println!("{}", name);
-        assert_eq!(true, false);
-    }
 }
